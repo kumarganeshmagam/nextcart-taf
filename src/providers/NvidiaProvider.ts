@@ -6,7 +6,7 @@ export class NvidiaProvider implements AIProvider {
   private client: OpenAI | null;
 
   constructor() {
-    const apiKey = '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';
+    const apiKey = process.env.NVIDIA_API_KEY;
     this.client = apiKey ? new OpenAI({
       apiKey,
       baseURL: 'https://integrate.api.nvidia.com/v1'

@@ -6,7 +6,7 @@ export class OpenRouterProvider implements AIProvider {
   private client: OpenAI | null;
 
   constructor() {
-    const apiKey = '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';
+    const apiKey = process.env.OPENROUTER_API_KEY;
     this.client = apiKey ? new OpenAI({
       apiKey,
       baseURL: 'https://openrouter.ai/api/v1',
