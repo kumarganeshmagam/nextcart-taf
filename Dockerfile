@@ -1,24 +1,28 @@
-# Use the official Playwright image which comes with browsers pre-installed
 FROM mcr.microsoft.com/playwright:v1.40.0-jammy
 
-WORKDIR /work
+WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Kolkata
 
-# Install dependencies
-RUN npm ci
+RUN apt-get update && apt-get install -y awscli && rm -rf /var/lib/apt/lists/*
 
-# Copy the rest of the framework source
-COPY . .
+ENV GIT_BRANCH=main
+ENV RUN_ID=local
+ENV RESULT_BUCKET=qa-test-results-ganesh
+ENV SPEC_FILTER=tests/
+ENV BASE_URL=http://localhost:3000
+ENV ENV=dev
+ENV AI_PROVIDER=nvidia
+ENV NVIDIA_API_KEY=placeholder
 
-# Environment variables (Defaults, can be overridden by docker-compose)
-ENV BASE_URL=http://nexcart:3000
-ENV AI_PROVIDER=gemini
-ENV NODE_ENV=development
-
-# Create directory for results
-RUN mkdir -p test-results /work/src/healing
-
-# Default command: run all tests
-CMD ["npx", "playwright", "test"]
+CMD git clone https://github.com/kumarganeshmagam/nextcart-taf.git . && \
+    git checkout $GIT_BRANCH && \
+    npm ci && \
+    npx playwright install --with-deps chromium && \
+    BASE_URL=$BASE_URL ENV=$ENV AI_PROVIDER=$AI_PROVIDER NVIDIA_API_KEY=$NVIDIA_API_KEY \
+    npx playwright test $SPEC_FILTER \
+    --reporter=json \
+    --project=chromium \
+    > /tmp/results.json || true && \
+    aws s3 cp /tmp/results.json s3://$RESULT_BUCKET/$RUN_ID/report.json
